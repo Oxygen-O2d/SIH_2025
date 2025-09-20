@@ -34,7 +34,8 @@ uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg
 
 if uploaded_file is not None and interpreter:
     image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    # This is the corrected line
+    st.image(image, caption='Uploaded Image.', use_container_width=True)
     
     # Preprocess the image and predict on button click
     if st.button('Classify Animal'):
