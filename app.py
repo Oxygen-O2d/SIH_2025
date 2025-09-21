@@ -17,7 +17,7 @@ st.set_page_config(
 @st.cache_resource
 def load_model_and_classes():
     try:
-        interpreter = tf.lite.Interpreter(model_path="model_fp16.tflite")
+        interpreter = tf.lite.Interpreter(model_path="preliminary_model.keras")
         interpreter.allocate_tensors()
         with open("class_names.txt", "r") as f:
             class_names = [line.strip() for line in f.readlines()]
@@ -80,4 +80,5 @@ else:
                 st.progress(float(confidence))
                 st.metric(label="Confidence", value=f"{confidence * 100:.2f}%")
         else:
+
             st.info("Click the button to classify the uploaded image.")
