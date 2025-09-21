@@ -32,13 +32,7 @@ st.markdown("""
             text-align: center;
             color: #333;
         }
-        /* Style the file uploader */
-        .stFileUploader {
-            border: 2px dashed #00aaff;
-            border-radius: 10px;
-            padding: 2rem;
-            background-color: #f8f9fa;
-        }
+        /* REMOVED the .stFileUploader style to get rid of the white box */
     </style>
 """, unsafe_allow_html=True)
 
