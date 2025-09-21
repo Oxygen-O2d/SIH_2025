@@ -7,31 +7,48 @@ import time
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Pashu Classifier",
-    page_icon="🐾",
+    page_title="Pashu Drishti | Animal Classifier",
+    page_icon="🐄",
     layout="wide",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS for a Cleaner Look ---
+# --- Custom CSS for a Polished Look ---
 st.markdown("""
     <style>
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+        /* Main page styling */
         .main .block-container {
             padding-top: 2rem;
             padding-bottom: 2rem;
-            padding-left: 5rem;
-            padding-right: 5rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
+        }
+        /* Hide Streamlit's default header and footer */
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        /* Style the sidebar */
+        .st-emotion-cache-16txtl3 {
+            padding: 2rem 1.5rem;
+        }
+        /* Style the primary button */
+        .stButton>button {
+            border-radius: 20px;
+            border: 1px solid #00aaff;
+            background-color: #00aaff;
+            color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        .stButton>button:hover {
+            border-color: #0088cc;
+            background-color: #0088cc;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- MODIFIED SECTION: Load the Keras Model ---
+# --- Model Loading ---
 @st.cache_resource
 def load_model_and_classes():
     try:
-        # Load the full Keras model
         model = tf.keras.models.load_model("preliminary_model.keras")
         with open("class_names.txt", "r") as f:
             class_names = [line.strip() for line in f.readlines()]
@@ -42,16 +59,11 @@ def load_model_and_classes():
 
 model, class_names = load_model_and_classes()
 
-if model:
-    # Get the input size from the model's first layer
-    input_shape = model.input_shape
-    _, height, width, _ = input_shape
-
-# --- Sidebar ---
+# --- Sidebar Content ---
 with st.sidebar:
-    st.title("🐾 **Pashu Classifier**")
+    st.title("🐄 **Pashu Drishti**")
     st.write("---")
-    st.header("Upload an Image")
+    st.header("Upload Image")
     uploaded_file = st.file_uploader(
         "Choose an image of a cattle or buffalo...",
         type=["jpg", "png", "jpeg"],
@@ -60,44 +72,51 @@ with st.sidebar:
     st.write("---")
     st.info(
         "**About:** This tool uses a deep learning model to classify animal types. "
-        "It's currently trained to differentiate between general cattle and buffaloes."
+        "It's currently trained to differentiate between general cattle and buffaloes. "
+        "Perfect for a preliminary check in areas like Gujarat, home of the Gir cow!"
     )
 
-# --- Main Page ---
+# --- Main Page Content ---
 st.title("Image-based Animal Type Classification")
-st.markdown("Upload an image via the sidebar to begin classification.")
 
-if uploaded_file is None:
-    st.image("https://placehold.co/1200x600/F0F2F6/333333?text=Upload+an+Image+to+Start&font=inter", use_container_width=True)
+if model is None:
+    st.warning("Model is not loaded. Please check the logs for errors.")
 else:
-    col1, col2 = st.columns([0.6, 0.4], gap="large")
-    with col1:
-        st.subheader("Image Preview")
-        image = Image.open(uploaded_file)
-        st.image(image, use_container_width=True, caption="Your Uploaded Image")
+    input_shape = model.input_shape
+    _, height, width, _ = input_shape
 
-    with col2:
-        st.subheader("Classification Results")
-        if st.button("▶️ Classify Animal", use_container_width=True, type="primary"):
-            with st.spinner("Analyzing..."):
-                time.sleep(1)
-                img_resized = image.resize((height, width))
-                img_array = np.array(img_resized, dtype=np.float32)
-                img_batch = np.expand_dims(img_array, 0)
+    if uploaded_file is None:
+        st.info("Please upload an image using the sidebar to begin.")
+        st.image("https://placehold.co/1200x600/F0F2F6/333333?text=Your+Image+Here&font=inter", use_container_width=True)
+    else:
+        # Layout with columns
+        col1, col2 = st.columns([0.6, 0.4], gap="large")
 
-                # --- MODIFIED SECTION: Use Keras model.predict ---
-                prediction = model.predict(img_batch)
-                
-                predicted_class = class_names[np.argmax(prediction[0])]
-                confidence = np.max(prediction[0])
+        with col1:
+            st.subheader("Image Preview")
+            image = Image.open(uploaded_file)
+            st.image(image, use_container_width=True, caption="Your Uploaded Image")
 
-                st.markdown("---")
-                if predicted_class.lower() == 'cattle':
-                    st.success(f"### 🐄 Predicted Animal: **{predicted_class.title()}**")
-                else:
-                    st.success(f"### 🐃 Predicted Animal: **{predicted_class.title()}**")
-                
-                st.metric(label="Confidence Score", value=f"{confidence * 100:.2f}%")
-                st.progress(float(confidence))
-        else:
-            st.info("Click the button to see the classification.")
+        with col2:
+            st.subheader("Classification Results")
+            if st.button("▶️ Classify Animal", use_container_width=True, type="primary"):
+                with st.spinner("Analyzing..."):
+                    time.sleep(1) # Simulate processing for better UX
+
+                    # Preprocess and predict
+                    img_resized = image.resize((height, width))
+                    img_array = np.array(img_resized, dtype=np.float32)
+                    img_batch = np.expand_dims(img_array, 0)
+
+                    prediction = model.predict(img_batch)
+                    predicted_class = class_names[np.argmax(prediction[0])]
+                    confidence = np.max(prediction[0])
+
+                    # Display results
+                    st.markdown("---")
+                    emoji = "🐄" if predicted_class.lower() == 'cattle' else "🐃"
+                    st.success(f"### {emoji} Predicted Animal: **{predicted_class.title()}**")
+                    st.metric(label="Confidence Score", value=f"{confidence * 100:.2f}%")
+                    st.progress(float(confidence))
+            else:
+                st.info("Click the button to see the classification.")
