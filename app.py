@@ -7,7 +7,7 @@ import time
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Pashu Drishti | Animal Classifier",
+    page_title="Pashu Drishti | Bovine Breed Classifier",
     page_icon="🐄",
     layout="wide",
 )
@@ -15,10 +15,8 @@ st.set_page_config(
 # --- Custom CSS for a Polished, Centered Look ---
 st.markdown("""
     <style>
-        /* Hide Streamlit's default header and footer */
         header {visibility: hidden;}
         footer {visibility: hidden;}
-        /* Center the main content */
         .block-container {
             padding-top: 2rem;
             padding-bottom: 2rem;
@@ -27,12 +25,7 @@ st.markdown("""
             max-width: 1200px;
             margin: auto;
         }
-        /* Style the title */
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        /* REMOVED the .stFileUploader style to get rid of the white box */
+        h1 { text-align: center; color: #333; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -45,14 +38,24 @@ def load_model_and_classes():
             class_names = [line.strip() for line in f.readlines()]
         return model, class_names
     except Exception as e:
-        st.error(f"Error: Could not load the model. Please ensure 'preliminary_model.keras' and 'class_names.txt' are in the root directory.")
+        st.error(f"Error: Could not load the model. Please ensure 'preliminary_model.keras' and the correct 'class_names.txt' are in the root directory.")
         return None, None
 
 model, class_names = load_model_and_classes()
 
+# --- THIS IS THE NEW LOGIC SECTION ---
+# Create a list of all classes that are considered 'cattle'
+# This allows the app to be smart about which emoji to use.
+CATTLE_BREEDS = [
+    'brahman', 'brahman cross', 'cholistani', 'cholistani cross', 
+    'dhani', 'fresian', 'fresian cross', 'kankarej', 
+    'sahiwal', 'sahiwal cross', 'sibbi'
+]
+# --- END OF NEW LOGIC SECTION ---
+
 # --- App Title and Header ---
 st.title("🐾 Pashu Drishti")
-st.markdown("<p style='text-align: center; color: grey;'>An AI-Powered Cattle & Buffalo Classifier</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: grey;'>An AI-Powered Bovine Breed Classifier</p>", unsafe_allow_html=True)
 st.write("---")
 
 # --- File Uploader ---
@@ -60,7 +63,7 @@ if model:
     input_shape = model.input_shape
     _, height, width, _ = input_shape
 
-    st.subheader("Upload Your Image Here")
+    st.subheader("Upload an Image of a Bovine Animal")
     uploaded_file = st.file_uploader(
         "Click to browse or drag and drop an image",
         type=["jpg", "png", "jpeg"],
@@ -85,11 +88,11 @@ else:
 
     with col2:
         st.subheader("Classification")
-        st.write("Click the button below to classify the animal.")
+        st.write("Click the button below to classify the animal's breed.")
         
         if st.button("▶️ Classify Animal", use_container_width=True, type="primary"):
             with st.spinner("Analyzing..."):
-                time.sleep(1) # Simulate processing for better UX
+                time.sleep(1) 
 
                 # Preprocess and predict
                 img_resized = image.resize((height, width))
@@ -100,12 +103,19 @@ else:
                 predicted_class = class_names[np.argmax(prediction[0])]
                 confidence = np.max(prediction[0])
 
-                # Display results
+                # Use the new CATTLE_BREEDS list to determine the emoji
                 st.markdown("---")
-                emoji = "🐄" if predicted_class.lower() == 'cattle' else "🐃"
-                st.success(f"### {emoji} Prediction: **{predicted_class.title()}**")
+                if predicted_class.lower() == 'buffalo':
+                    emoji = "🐃"
+                elif predicted_class.lower() in CATTLE_BREEDS:
+                    emoji = "🐄"
+                else: # For 'unidentified (mixed)'
+                    emoji = "🐾"
+
+                # Display results
+                st.success(f"### {emoji} Prediction: **{predicted_class.replace('_', ' ').title()}**")
                 
                 st.metric(label="Confidence Score", value=f"{confidence * 100:.2f}%")
                 st.progress(float(confidence))
 
-                st.info(f"This tool is great for a first look, especially here in Gujarat where the Gir cow is so common!")
+                st.info(f"This model identifies several breeds common in Gujarat and across India, including Kankrej and Sahiwal!")
